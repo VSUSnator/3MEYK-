@@ -15,24 +15,22 @@ namespace mySnake.shared
             void OnArrowLeft();
             void OnArrowRight();
         }
-       
 
         private readonly HashSet<IArrowListener> arrowListeners = new();
 
         public void Subscribe(IArrowListener l)
         {
             arrowListeners.Add(l);
-        }      
-
+        }
 
         public void Update()
         {
             while (Console.KeyAvailable)
             {
-                var key = Console.ReadKey();
+                var key = Console.ReadKey(true); 
 
                 switch (key.Key)
-                {                   
+                {
                     case ConsoleKey.UpArrow or ConsoleKey.W:
                         foreach (var l in arrowListeners) l.OnArrowUp();
                         break;
@@ -47,7 +45,6 @@ namespace mySnake.shared
                         break;
                 }
             }
-
         }
     }
 }
