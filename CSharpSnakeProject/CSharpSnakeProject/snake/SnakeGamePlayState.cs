@@ -32,6 +32,37 @@ namespace mySnake.snake
         private float _timeToMove = 0f;
         private const float MoveInterval = 0.25f; // Интервал движения
 
+        public SnakeGamePlayState()
+        {
+            // Запускаем поток для обработки ввода
+            Thread inputThread = new Thread(HandleInput);
+            inputThread.IsBackground = true;
+            inputThread.Start();
+        }
+
+        private void HandleInput()
+        {
+            while (true)
+            {
+                var key = Console.ReadKey(true).Key;
+                switch (key)
+                {
+                    case ConsoleKey.W:
+                        SetDirection(SnakeDir.Up);
+                        break;
+                    case ConsoleKey.S:
+                        SetDirection(SnakeDir.Down);
+                        break;
+                    case ConsoleKey.A:
+                        SetDirection(SnakeDir.Left);
+                        break;
+                    case ConsoleKey.D:
+                        SetDirection(SnakeDir.Right);
+                        break;
+                }
+            }
+        }
+
         public void SetDirection(SnakeDir dir)
         {
             // Проверка на противоположное направление
