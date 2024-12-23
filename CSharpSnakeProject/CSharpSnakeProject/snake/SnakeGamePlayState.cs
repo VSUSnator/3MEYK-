@@ -28,9 +28,10 @@ namespace mySnake.snake
 
         private List<Cell> _body = new();
         private SnakeDir currentDir = SnakeDir.Left;
-        private Queue<SnakeDir> directionQueue = new(); // Используем очередь для направлений
         private float _timeToMove = 0f;
         private const float MoveInterval = 0.25f; // Интервал движения
+        private float _lastInputTime = 0f; // Время последнего ввода
+        private const float InputTimeout = 0.5f; // Таймаут для сброса
 
         public SnakeGamePlayState()
         {
@@ -47,6 +48,7 @@ namespace mySnake.snake
                 var key = Console.ReadKey(true).Key;
                 switch (key)
                 {
+                    // Управление WASD
                     case ConsoleKey.W:
                         SetDirection(SnakeDir.Up);
                         break;
@@ -59,20 +61,38 @@ namespace mySnake.snake
                     case ConsoleKey.D:
                         SetDirection(SnakeDir.Right);
                         break;
+
+                    // Управление стрелочными клавишами
+                    case ConsoleKey.UpArrow:
+                        SetDirection(SnakeDir.Up);
+                        break;
+                    case ConsoleKey.DownArrow:
+                        SetDirection(SnakeDir.Down);
+                        break;
+                    case ConsoleKey.LeftArrow:
+                        SetDirection(SnakeDir.Left);
+                        break;
+                    case ConsoleKey.RightArrow:
+                        SetDirection(SnakeDir.Right);
+                        break;
                 }
             }
         }
 
         public void SetDirection(SnakeDir dir)
         {
+            _lastInputTime = 0f; // Обновляем время последнего ввода
             // Проверка на противоположное направление
+            /*
             if (!(currentDir == SnakeDir.Up && dir == SnakeDir.Down) &&
                 !(currentDir == SnakeDir.Down && dir == SnakeDir.Up) &&
                 !(currentDir == SnakeDir.Left && dir == SnakeDir.Right) &&
                 !(currentDir == SnakeDir.Right && dir == SnakeDir.Left))
             {
-                directionQueue.Enqueue(dir); // Добавляем направление в очередь
+                currentDir = dir; // Обновляем текущее направление
             }
+            */
+            currentDir = dir; // Убрали проверку, чтобы обновлять направление сразу
         }
 
         public override void Reset()
@@ -86,15 +106,15 @@ namespace mySnake.snake
         public override void Update(float deltaTime)
         {
             _timeToMove -= deltaTime;
+            _lastInputTime += deltaTime; // Увеличиваем время последнего ввода
+            if (_lastInputTime >= InputTimeout)
+            {
+                
+            }
+
             if (_timeToMove <= 0f)
             {
                 _timeToMove = MoveInterval;
-
-                // Обновляем текущее направление, если есть новые команды
-                if (directionQueue.Count > 0)
-                {
-                    currentDir = directionQueue.Dequeue();
-                }
 
                 var head = _body[0];
                 var nextCell = ShiftTo(head, currentDir);
