@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Threading; // Добавлено
 using mySnake.shared;
+using Shared;
 
 namespace mySnake.snake
 {
@@ -14,27 +16,34 @@ namespace mySnake.snake
 
     internal class SnakeGamePlayState : BaseGameState
     {
+        const char squareSymbol = '■';
         private class Cell
         {
-            public int X { get; }
-            public int Y { get; }
+            public int x; public int y;
 
             public Cell(int x, int y)
             {
-                X = x;
-                Y = y;
+                this.x = x;
+                this.y = y;
             }
         }
+        public int fieldWidth { get; set; }
+        public int fieldHeight { get; set; }
 
         private List<Cell> _body = new();
         private SnakeDir currentDir = SnakeDir.Left;
+
         private float _timeToMove = 0f;
+
         private const float MoveInterval = 0.25f; // Интервал движения
         private float _lastInputTime = 0f; // Время последнего ввода
         private const float InputTimeout = 0.5f; // Таймаут для сброса
 
-        public SnakeGamePlayState()
+        public SnakeGamePlayState(int width, int height) // Изменено: принимаем размеры поля
         {
+            fieldWidth = width;
+            fieldHeight = height;
+
             // Запускаем поток для обработки ввода
             Thread inputThread = new Thread(HandleInput);
             inputThread.IsBackground = true;
@@ -75,6 +84,11 @@ namespace mySnake.snake
                     case ConsoleKey.RightArrow:
                         SetDirection(SnakeDir.Right);
                         break;
+
+                    // Выход из игры
+                    case ConsoleKey.Escape:
+                        Environment.Exit(0);
+                        break;
                 }
             }
         }
@@ -83,23 +97,22 @@ namespace mySnake.snake
         {
             _lastInputTime = 0f; // Обновляем время последнего ввода
             // Проверка на противоположное направление
-            /*
-            if (!(currentDir == SnakeDir.Up && dir == SnakeDir.Down) &&
-                !(currentDir == SnakeDir.Down && dir == SnakeDir.Up) &&
-                !(currentDir == SnakeDir.Left && dir == SnakeDir.Right) &&
-                !(currentDir == SnakeDir.Right && dir == SnakeDir.Left))
+            //if (!(currentDir == SnakeDir.Up && dir == SnakeDir.Down) &&
+            //    !(currentDir == SnakeDir.Down && dir == SnakeDir.Up) &&
+            //    !(currentDir == SnakeDir.Left && dir == SnakeDir.Right) &&
+            //    !(currentDir == SnakeDir.Right && dir == SnakeDir.Left))
             {
                 currentDir = dir; // Обновляем текущее направление
             }
-            */
-            currentDir = dir; // Убрали проверку, чтобы обновлять направление сразу
         }
 
         public override void Reset()
         {
             _body.Clear();
+            var middleY = fieldHeight / 2;
+            var middleX = fieldWidth / 2;
             currentDir = SnakeDir.Left;
-            _body.Add(new Cell(0, 0));
+            _body.Add(new Cell(middleX + 3, middleY));
             _timeToMove = 0f;
         }
 
@@ -107,34 +120,47 @@ namespace mySnake.snake
         {
             _timeToMove -= deltaTime;
             _lastInputTime += deltaTime; // Увеличиваем время последнего ввода
+            if (_timeToMove > 0f)
+                return;
+
+            _timeToMove = MoveInterval;
+            var head = _body[0];
+            var nextCell = ShiftTo(head, currentDir);
+
+            _body.Insert(0, nextCell); // Добавляем новую ячейку в тело змеи
+            //Console.WriteLine($"{nextCell.x}, {nextCell.y}"); // координат змейки
+
             if (_lastInputTime >= InputTimeout)
             {
-                
+                // Логика сброса или обработки таймаута
             }
 
-            if (_timeToMove <= 0f)
-            {
-                _timeToMove = MoveInterval;
-
-                var head = _body[0];
-                var nextCell = ShiftTo(head, currentDir);
-
-                _body.Insert(0, nextCell);
-                Console.WriteLine($"{nextCell.X}, {nextCell.Y}");
-                _body.RemoveAt(_body.Count - 1);
-            }
+            _body.RemoveAt(_body.Count - 1); // Удаляем последнюю ячейку
         }
 
         private Cell ShiftTo(Cell from, SnakeDir toDir)
         {
-            return toDir switch
+            switch (toDir)
             {
-                SnakeDir.Up => new Cell(from.X, from.Y + 1),
-                SnakeDir.Down => new Cell(from.X, from.Y - 1),
-                SnakeDir.Left => new Cell(from.X - 1, from.Y),
-                SnakeDir.Right => new Cell(from.X + 1, from.Y),
-                _ => from,
-            };
+                case SnakeDir.Up:
+                    return new Cell(from.x, from.y - 1);
+                case SnakeDir.Down:
+                    return new Cell(from.x, from.y + 1);
+                case SnakeDir.Left:
+                    return new Cell(from.x - 1, from.y);
+                case SnakeDir.Right:
+                    return new Cell(from.x + 1, from.y);
+            }
+
+            return from;
+        }
+
+        public override void Draw(ConsoleRenderer renderer)
+        {
+            foreach (Cell cell in _body)
+            {
+                renderer.SetPixel(cell.x, cell.y, squareSymbol, 3);
+            }
         }
     }
 }
